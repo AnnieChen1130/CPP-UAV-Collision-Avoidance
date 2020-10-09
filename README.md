@@ -16,7 +16,7 @@ To run the program in minicomputer
 - if recevie error for "make" command:
 *make: /snap/cmake/549/bin/cmake: Command not found
 make: *** [Makefile:255: cmake_check_build_system] Error 127*
--Do "cmake + project path":
+- Do "cmake + project path":
 Example: *cmake ~/Documents/uav_project/UAV-collision-avoidance-master*
 4. Command "sudo ./ CA" to run the program (sudo password: uavCPP2020)
 5. to stop the running program, press Ctrl C in the keyboard.
