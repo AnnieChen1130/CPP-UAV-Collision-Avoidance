@@ -140,7 +140,7 @@ top (int argc, char **argv)
 
 	autopilot_interface.start();
 //sleep(5);	
-printf("START COLLISION AVOIDANCE");
+printf("CA::top(): START COLLISION AVOIDANCE");
 	//---------------------------------------------------------------------------
 	//START COLLISION AVOIDANCE THREAD
 	//---------------------------------------------------------------------------
@@ -188,8 +188,8 @@ commands(Autopilot_Interface &api)
 
 
 
-		printf("\nRequested waypoints111\n");
-		api.Request_Waypoints();
+		printf("\nCA::commands(): Requested waypoints\n");
+		//api.Request_Waypoints();
 		//mavlink_mission_item_t avoidWaypoint = api.create_waypoint(34.213354, -117.321498, 50, 5, 20);
 		
 		uint16_t seq = 3;
@@ -303,7 +303,7 @@ quit_handler( int sig )
 int
 main(int argc, char **argv)
 {
-printf("hello");
+printf("Hello!");
 	// This program uses throw, wrap one big try/catch here
 	try
 	{
