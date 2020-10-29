@@ -1,4 +1,4 @@
-UAV-collision-avoidance
+# UAV-collision-avoidance
 Collision aovidance algorithm developed by CPP UAV REU students
 
 -Current ICAO of ADS-B in Piper Cub aircraft: 3819648
