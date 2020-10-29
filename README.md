@@ -1,13 +1,12 @@
-# UAV-collision-avoidance
-Collision aovidance algorithm developed by CPP UAV REU students
-
--Current ICAO of ADS-B in Piper Cub aircraft: 3819648
--Current ICAO of ADS-B on test board: 10700118
+UAV-collision-avoidance
+Collision avoidance algorithm developed by CPP UAV REU students
 
 # CPP-UAV
 File Structure 
 1. CA.cpp is the main.cpp
 2. autopilot_interface.cpp has all the funtions (autopilot, collision avoidance)
+- Current ICAO of ADS-B for our aircraft: 3819648 
+- Current ICAO of ADS-B for our quadcopter: 10700118
 
 # To run the program in minicomputer
 1. All hardwares have to turn on, please ask Aziz to help.
