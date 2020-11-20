@@ -96,8 +96,9 @@ top (int argc, char **argv)
 	 * pthread mutex lock.
 	 *
 	 */
-	Serial_Port serial_port(uart_name, baudrate);
 
+	Serial_Port serial_port(uart_name, baudrate);
+	//printf("CA uart_name:%s\n",uart_name);
 
 	/*
 	 * Instantiate an autopilot interface object
@@ -115,7 +116,6 @@ top (int argc, char **argv)
 	 *
 	 */
 	Autopilot_Interface autopilot_interface(&serial_port);
-
 	/*
 	 * Setup interrupt signal handler
 	 *
@@ -189,7 +189,7 @@ commands(Autopilot_Interface &api)
 
 
 		printf("\nCA::commands(): Requested waypoints\n");
-		//api.Request_Waypoints();
+		api.Request_Waypoints();
 		//mavlink_mission_item_t avoidWaypoint = api.create_waypoint(34.213354, -117.321498, 50, 5, 20);
 		
 		uint16_t seq = 3;
