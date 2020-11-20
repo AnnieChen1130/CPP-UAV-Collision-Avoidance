@@ -1150,6 +1150,7 @@ start_collision_avoidance_thread (void *args)
 	Autopilot_Interface *autopilot_interface = (Autopilot_Interface *)args;
 
 	// run the object's read thread
+	printf("start_collision_avoidance_thread()  CALL collision_avoidance_begin()\n");
 	autopilot_interface->collision_avoidance_begin();
 
 	// done!
@@ -1666,7 +1667,8 @@ Receive_Waypoints() {
 			usleep(1000);		
 			i++;
 			/* Accounts for a frozen code. Needs improvement
-			if (i=100000) { //If the autopilot does not receive the waypoint in this amount of time, an error has occured so start over.
+			if (i=100000) { //If the autopilot does not receive the waypoint 
+			in this amount of time, an error has occured so start over.
 
 				printf("hey %i\n", i);
 				reading_waypoint_status = false;
@@ -1739,6 +1741,7 @@ collision_avoidance_begin()
 	}
 	else
 	{
+		printf("collision_avoidance_begin CALL CA_predict_thread()\n");
 		CA_predict_thread();
 		return;
 	}
@@ -1865,7 +1868,7 @@ void
 Autopilot_Interface::
 CA_predict_thread()
 {
-
+	printf("Start CA_predict_thread()\n");
 
 	//------------------------------------------------
 	//Start detect/predict loop
@@ -1985,6 +1988,8 @@ CA_predict_thread()
 			addToFile(convertToString(ourAircraft.velocityY[0]),"Our Y Velocity");//NED
 			addToFile(convertToString(otherAircraft.velocityX[0]),"Other X Velocity");//NED
 			addToFile(convertToString(otherAircraft.velocityY[0]),"Other Y Velocity");//NED
+			
+			printf("Autopilot_Interface::CA_predict_thread():\n");
 			printf("Done Logging\n");
 
 			//printf("\nPREDICT\n");			//Predict using the logged point
@@ -2379,6 +2384,8 @@ void
 Autopilot_Interface::
 CA_Avoid(aircraftInfo & aircraftA, aircraftInfo & aircraftB, predictedCollision & collision)
 {
+
+	
 	double missDist = 75; //Meters
 	double turnRadius = 50; //Meters
 	double avoidVec[2] = {0};
