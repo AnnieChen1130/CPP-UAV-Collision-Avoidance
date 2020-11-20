@@ -221,6 +221,7 @@ open_serial()
 	printf("OPEN PORT\n");
 
 	fd = _open_port(uart_name);
+	//printf("Serial_port uart_name: %s\n", uart_name);
 
 	// Check success
 	if (fd == -1)
@@ -332,11 +333,13 @@ _open_port(const char* port)
 	// O_RDWR - Read and write
 	// O_NOCTTY - Ignore special chars like CTRL-C
 	fd = open(port, O_RDWR | O_NOCTTY | O_NDELAY);
+	//printf("fd=%d\n",fd);
+	//printf("port:%s\n", port);
 
 	// Check for Errors
 	if (fd == -1)
 	{
-		/* Could not open the port. */
+		// Could not open the port. 
 		return(-1);
 	}
 
@@ -349,6 +352,10 @@ _open_port(const char* port)
 	// Done!
 	return fd;
 }
+
+
+
+
 
 // ------------------------------------------------------------------------------
 //   Helper Function - Setup Serial Port
