@@ -17,7 +17,7 @@ File Structure
 make: *** [Makefile:255: cmake_check_build_system] Error 127*
 - Do "cmake + project path":
 Example: *cmake ~/Documents/uav_project/UAV-collision-avoidance-master*
-4. Command "sudo ./ CA" to run the program (sudo password: uavCPP2020)
+4. Command "sudo ./ CA" to run the program (sudo password: **uavCPP2020**)
 5. to stop the running program, press Ctrl C in the keyboard.
 
 # Mission Planner
