@@ -114,32 +114,14 @@ string timeStamp()
 {
 
 	auto tp = std::chrono::high_resolution_clock::now();
-	auto ttime_t = std::chrono::system_clock::to_time_t(tp);
-	auto tp_sec = std::chrono::system_clock::from_time_t(ttime_t);
-	milliseconds ms = duration_cast<milliseconds>(tp - tp_sec);
-
-	std::tm * ttm = localtime(&ttime_t);
-
-	char date_time_format[] = "%Y.%m.%d-%H.%M.%S";
-
-	char time_str[] = "yyyy.mm.dd.HH-MM.SS.fff";
-
-	strftime(time_str, strlen(time_str), date_time_format, ttm);
-
-	string result(time_str);
-	result.append(".");
-	result.append(std::to_string(ms.count()));
-
-	return result;
 }
-
 //Appends to txt file or creates txt file if none exist
 static void addToFile(string line, string description)
 {
 	std::ofstream file;
 	//modify string filepath based on folder you want to access
 	//currently will output txt file to project cmake-debug folder
-	string filepath = "logging_file_new333.txt";
+	string filepath = "logging_file_3_13_flightTest.txt";
 	file.open(filepath, std::ios::out | std::ios::app);
 	//make sure write fails with exception if something is wrong
 	file.exceptions(file.exceptions() | std::ios::failbit | std::ifstream::badbit);
@@ -1150,7 +1132,7 @@ start_collision_avoidance_thread (void *args)
 	Autopilot_Interface *autopilot_interface = (Autopilot_Interface *)args;
 
 	// run the object's read thread
-	printf("start_collision_avoidance_thread()  CALL collision_avoidance_begin()\n");
+	printf("Auto_Int::start_collision_avoidance_thread()  CALL collision_avoidance_begin()\n");
 	autopilot_interface->collision_avoidance_begin();
 
 	// done!
@@ -1721,7 +1703,7 @@ start_collision_avoidance()
 	int result;
 	
 
-	printf("\nAuto_Int.start_collision_avoidance(): In start_collision_avoidance \n");
+	printf("\nAuto_Int::start_collision_avoidance(): CALL start_collision_avoidance_thread \n");
 	//Start thread
 	result = pthread_create( &CA_tid, NULL, &start_collision_avoidance_thread, this );
 	if ( result ) throw result;
@@ -1741,7 +1723,7 @@ collision_avoidance_begin()
 	}
 	else
 	{
-		printf("collision_avoidance_begin CALL CA_predict_thread()\n");
+		printf("Auto_Int::collision_avoidance_begin CALL CA_predict_thread()\n");
 		CA_predict_thread();
 		return;
 	}
@@ -1868,7 +1850,7 @@ void
 Autopilot_Interface::
 CA_predict_thread()
 {
-	printf("Start CA_predict_thread()\n");
+	printf("\n\n****Start Auto_Int::CA_predict_thread()****\n\n");
 
 	//------------------------------------------------
 	//Start detect/predict loop
@@ -1993,11 +1975,13 @@ CA_predict_thread()
 			printf("Done Logging\n");
 
 			//printf("\nPREDICT\n");			//Predict using the logged point
+			printf("Auto_Int::CA_predict_thread CALL CA_Predict()\n");
 			collision = CA_Predict(ourAircraft, otherAircraft, ourAircraft.Hdg[0], ourAircraft.Hdg[1]);
 			//collision.collisionDetected == true;
 			
 			printf("Collision predicted? %d\n", collision.collisionDetected);
 		
+			printf("if predict collision, CA_predict_thread CALL CA_Avoid()\n");
 			//Avoid if necessary
 			if (collision.collisionDetected == true && AVOID_DELAY <=1 ) {
 				printf("Avoid function\n");
@@ -2093,6 +2077,8 @@ CA_Predict(aircraftInfo & aircraftA, aircraftInfo & aircraftB, double current_Hd
 	double RvCB [2];
 	
 	double collisionDist;
+
+	printf("\nStart Auto_Int::CA_Predict\n");
 
 	//-----------------------------------------------------------------------------
 	// Set up equations of predicted motion for both aircraft
@@ -2385,6 +2371,7 @@ Autopilot_Interface::
 CA_Avoid(aircraftInfo & aircraftA, aircraftInfo & aircraftB, predictedCollision & collision)
 {
 
+	printf("\nStart Auto_Int::CA_Avoid\n");
 	
 	double missDist = 75; //Meters
 	double turnRadius = 50; //Meters
@@ -2416,7 +2403,6 @@ CA_Avoid(aircraftInfo & aircraftA, aircraftInfo & aircraftB, predictedCollision 
 	//double collisionDist = sqrt(pow((collision.locationA.x - aircraftA.lat[0]), 2) + pow((collision.locationA.y - aircraftA.lon[0]), 2));
 	double avdAlt;
 	double avdAng; //angle increment between collision point and avoid point (A)
-	
 	int count;
 	bool right;
 
