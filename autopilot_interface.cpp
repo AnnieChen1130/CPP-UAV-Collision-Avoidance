@@ -114,14 +114,32 @@ string timeStamp()
 {
 
 	auto tp = std::chrono::high_resolution_clock::now();
+	auto ttime_t = std::chrono::system_clock::to_time_t(tp);
+	auto tp_sec = std::chrono::system_clock::from_time_t(ttime_t);
+	milliseconds ms = duration_cast<milliseconds>(tp - tp_sec);
+
+	std::tm * ttm = localtime(&ttime_t);
+
+	char date_time_format[] = "%Y.%m.%d-%H.%M.%S";
+
+	char time_str[] = "yyyy.mm.dd.HH-MM.SS.fff";
+
+	strftime(time_str, strlen(time_str), date_time_format, ttm);
+
+	string result(time_str);
+	result.append(".");
+	result.append(std::to_string(ms.count()));
+
+	return result;
 }
+
 //Appends to txt file or creates txt file if none exist
 static void addToFile(string line, string description)
 {
 	std::ofstream file;
 	//modify string filepath based on folder you want to access
 	//currently will output txt file to project cmake-debug folder
-	string filepath = "logging_file_3_13_flightTest.txt";
+	string filepath = "logging_file_new222.txt";
 	file.open(filepath, std::ios::out | std::ios::app);
 	//make sure write fails with exception if something is wrong
 	file.exceptions(file.exceptions() | std::ios::failbit | std::ifstream::badbit);
@@ -287,7 +305,7 @@ Autopilot_Interface(Serial_Port *serial_port_)
 
 	system_id    = 0; // system id
 	autopilot_id = 0; // autopilot component id
-	companion_id = 0; // companion computer component id
+	companion_id = 0; // companion computer component id/dev/ttyUSB0
 
 	current_messages.sysid  = system_id;
 	current_messages.compid = autopilot_id;
@@ -475,7 +493,7 @@ read_messages()
 
 				case MAVLINK_MSG_ID_ADSB_VEHICLE:
 				{
-					printf("\nMAVLINK_MSG_ID_ADS_B\n");
+					//printf("\nMAVLINK_MSG_ID_ADS_B\n");
 					//Test that this function will work
 
 				
@@ -888,7 +906,7 @@ read_thread()
 
 	while ( ! time_to_exit )
 	{
-		printf("Read message\n");
+		//printf("Read message\n");
 		read_messages();
 		usleep(100000); // Read batches at 10Hz
 	}
@@ -1132,7 +1150,6 @@ start_collision_avoidance_thread (void *args)
 	Autopilot_Interface *autopilot_interface = (Autopilot_Interface *)args;
 
 	// run the object's read thread
-	printf("Auto_Int::start_collision_avoidance_thread()  CALL collision_avoidance_begin()\n");
 	autopilot_interface->collision_avoidance_begin();
 
 	// done!
@@ -1532,7 +1549,7 @@ Request_Waypoints()
 		return NULL;
 	}
 
-	printf("Auto_Int::Request_Waypoint(): REQUESTING WAYPOINTS\n");
+	printf("REQUESTING WAYPOINTS\n");
 	reading_waypoint_status = true;
 
 	//Request mission
@@ -1583,7 +1600,7 @@ Request_Waypoints()
 		return waypointError;
 	}
 
-	//For some reason this function needs to end if the waypoint message is to be readork
+	//For some reason this function needs to end if the waypoint message is to be read
 	
 	Receive_Waypoints();
 
@@ -1599,7 +1616,7 @@ bool
 Autopilot_Interface::
 Receive_Waypoints() {
 
-	printf("Auto_Int::Receive_Waypoints(): RECEIVING WAYPOINTS\n");
+	printf("RECEIVING WAYPOINTS\n");
 	//---------------------------------------------------------------------
 	//Send request then receive each waypoint of the mission
 	//---------------------------------------------------------------------
@@ -1631,8 +1648,12 @@ Receive_Waypoints() {
 		missionItem = current_messages.mavlink_mission_item;
 
 		//Account for whether the mission already has elements in it
-		if (currentMission.size() > seqNum) { currentMission[seqNum] = create_waypoint(missionItem.x, missionItem.y, missionItem.z, missionItem.seq, missionItem.param2); }
-		else { currentMission.push_back(create_waypoint(missionItem.x, missionItem.y, missionItem.z, missionItem.seq, missionItem.param2)); }
+		if (currentMission.size() > seqNum) { 
+			currentMission[seqNum] = create_waypoint(missionItem.x, missionItem.y, missionItem.z, missionItem.seq, missionItem.param2); 
+			}
+		else { 
+			currentMission.push_back(create_waypoint(missionItem.x, missionItem.y, missionItem.z, missionItem.seq, missionItem.param2)); 
+			}
 
 
 		//Makes sure the waypoint is written to the right vector element and isn't skipped
@@ -1649,8 +1670,7 @@ Receive_Waypoints() {
 			usleep(1000);		
 			i++;
 			/* Accounts for a frozen code. Needs improvement
-			if (i=100000) { //If the autopilot does not receive the waypoint 
-			in this amount of time, an error has occured so start over.
+			if (i=100000) { //If the autopilot does not receive the waypoint in this amount of time, an error has occured so start over.
 
 				printf("hey %i\n", i);
 				reading_waypoint_status = false;
@@ -1703,7 +1723,7 @@ start_collision_avoidance()
 	int result;
 	
 
-	printf("\nAuto_Int::start_collision_avoidance(): CALL start_collision_avoidance_thread \n");
+	printf("\nIn start_collision_avoidance \n");
 	//Start thread
 	result = pthread_create( &CA_tid, NULL, &start_collision_avoidance_thread, this );
 	if ( result ) throw result;
@@ -1723,7 +1743,6 @@ collision_avoidance_begin()
 	}
 	else
 	{
-		printf("Auto_Int::collision_avoidance_begin CALL CA_predict_thread()\n");
 		CA_predict_thread();
 		return;
 	}
@@ -1850,7 +1869,7 @@ void
 Autopilot_Interface::
 CA_predict_thread()
 {
-	printf("\n\n****Start Auto_Int::CA_predict_thread()****\n\n");
+
 
 	//------------------------------------------------
 	//Start detect/predict loop
@@ -1883,14 +1902,14 @@ CA_predict_thread()
 
 		//If the current stored position is not equal to the gpos position i.e. the position message has been updated, then these vectors can be 			updated. Otherwise wait a little longer to update the array
 
-		// printf("\nAuto_Int. CA_predict_thread():\n!!!!!Here Our Plane!!!!!!!!\n");
-		// printf("Ouraircraft Update: %s\n", ourUpdated?"true":"false");
-		// printf("our lat %f\n", ourAircraft.lat[0]);
-		// printf("our lon %f\n", ourAircraft.lon[0]);
-		// printf("gpos lat %f\n", gpos.lat/1E7);
-		// printf("gpos lon %f\n", gpos.lon/1E7);
+		printf("\n!!!!!Here Our Plane!!!!!!!!\n");
+		printf("Ouraircraft Update: %s\n", ourUpdated?"true":"false");
+		printf("our lat %f\n", ourAircraft.lat[0]);
+		printf("our lon %f\n", ourAircraft.lon[0]);
+		printf("gpos lat %f\n", gpos.lat/1E7);
+		printf("gpos lon %f\n", gpos.lon/1E7);
 
-		// Update check for the controlled aircraft
+		//Update check for the controlled aircraft
 		//If our position has changed then updateAircraftInfo(A)
 		if ( fabs(ourAircraft.lat[0] - (double) gpos.lat/1E7) > 0.0000001 || fabs(ourAircraft.lon[0] - (double) gpos.lon/1E7) > 0.0000001 ) 
 		{
@@ -1927,12 +1946,12 @@ CA_predict_thread()
 			fractionSinceUpdate++; //Time = .3333*fractionSinceUpdate 
 		}
 		
-		// printf("\n???There Other Plane?????\n");
-		// printf("Otheraircraft Update: %s\n", otherUpdated?"true":"false");
-		// printf("other lat  %f\n",otherAircraft.lat[0]);
-		// printf("other lon  %f\n",otherAircraft.lon[0]);
-		// printf("adsb lat  %f\n",adsb.lat/1E7);
-		// printf("adsb lon  %f\n",adsb.lon/1E7);
+		printf("\n???There Other Plane?????\n");
+		printf("Otheraircraft Update: %s\n", otherUpdated?"true":"false");
+		printf("other lat  %f\n",otherAircraft.lat[0]);
+		printf("other lon  %f\n",otherAircraft.lon[0]);
+		printf("adsb lat  %f\n",adsb.lat/1E7);
+		printf("adsb lon  %f\n",adsb.lon/1E7);
 		
 		
 		//printf("log criteria dist: %lf\n",(double) abs(otherAircraft.lat[0] - (double) adsb.lat/1E7));
@@ -1970,18 +1989,14 @@ CA_predict_thread()
 			addToFile(convertToString(ourAircraft.velocityY[0]),"Our Y Velocity");//NED
 			addToFile(convertToString(otherAircraft.velocityX[0]),"Other X Velocity");//NED
 			addToFile(convertToString(otherAircraft.velocityY[0]),"Other Y Velocity");//NED
-			
-			printf("Autopilot_Interface::CA_predict_thread():\n");
-			printf("Done Logging\n");
+			//printf("Done Logging\n");
 
 			//printf("\nPREDICT\n");			//Predict using the logged point
-			printf("Auto_Int::CA_predict_thread CALL CA_Predict()\n");
 			collision = CA_Predict(ourAircraft, otherAircraft, ourAircraft.Hdg[0], ourAircraft.Hdg[1]);
 			//collision.collisionDetected == true;
 			
 			printf("Collision predicted? %d\n", collision.collisionDetected);
 		
-			printf("if predict collision, CA_predict_thread CALL CA_Avoid()\n");
 			//Avoid if necessary
 			if (collision.collisionDetected == true && AVOID_DELAY <=1 ) {
 				printf("Avoid function\n");
@@ -2077,8 +2092,6 @@ CA_Predict(aircraftInfo & aircraftA, aircraftInfo & aircraftB, double current_Hd
 	double RvCB [2];
 	
 	double collisionDist;
-
-	printf("\nStart Auto_Int::CA_Predict\n");
 
 	//-----------------------------------------------------------------------------
 	// Set up equations of predicted motion for both aircraft
@@ -2370,9 +2383,6 @@ void
 Autopilot_Interface::
 CA_Avoid(aircraftInfo & aircraftA, aircraftInfo & aircraftB, predictedCollision & collision)
 {
-
-	printf("\nStart Auto_Int::CA_Avoid\n");
-	
 	double missDist = 75; //Meters
 	double turnRadius = 50; //Meters
 	double avoidVec[2] = {0};
@@ -2403,6 +2413,7 @@ CA_Avoid(aircraftInfo & aircraftA, aircraftInfo & aircraftB, predictedCollision 
 	//double collisionDist = sqrt(pow((collision.locationA.x - aircraftA.lat[0]), 2) + pow((collision.locationA.y - aircraftA.lon[0]), 2));
 	double avdAlt;
 	double avdAng; //angle increment between collision point and avoid point (A)
+	
 	int count;
 	bool right;
 
