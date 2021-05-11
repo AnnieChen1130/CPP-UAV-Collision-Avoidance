@@ -5,8 +5,8 @@ Collision avoidance algorithm developed by CPP UAV REU students
 File Structure 
 1. CA.cpp is the main.cpp
 2. autopilot_interface.cpp has all the funtions (autopilot, collision avoidance)
-- Current ICAO of ADS-B for our aircraft: 3819648 
-- Current ICAO of ADS-B for our quadcopter: 10700118
+- Current ICAO of ADS-B for our aircraft:  10700118?
+- Current ICAO of ADS-B for our quadcopter: 3819648
 
 # To run the program in minicomputer
 1. All hardwares have to turn on, please ask Aziz to help.
