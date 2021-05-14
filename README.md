@@ -20,6 +20,16 @@ Example: *cmake ~/Documents/uav_project/UAV-collision-avoidance-master*
 4. Command "sudo ./ CA" to run the program (sudo password:   **uavCPP2020**)
 5. to stop the running program, press Ctrl C in the keyboard.
 
+# Create new Work Branch in mini PC
+1. Copy folder "UAV-collision-avoidance-master" to Work_Branch folder
+2. Change copied "UAV-collision-avoidance-master" folder name with your name on it 
+3. Delete CMakeCache.txt file in the folder
+4. Do "cmake + project path":
+Example: *cmake ~/Desktop/Work_Branch/Annie-UAV-collision-avoidance-Annie*
+4. Command "sudo ./ CA" to run the program (sudo password:   **uavCPP2020**)
+5. to stop the running program, press Ctrl C in the keyboard.
+
+
 # Mission Planner
 First "Connect" at the right-up conner.
 
