@@ -21,7 +21,7 @@ Example: *cmake ~/Documents/uav_project/UAV-collision-avoidance-master*
 5. to stop the running program, press Ctrl C in the keyboard.
 
 ## Possible Error Message
-1."OPEN PORT
+1. "OPEN PORT
 failure, could not open port.
 mavlink_control threw exception 1 "
 -- There is a problem with connecting pixhawk.
