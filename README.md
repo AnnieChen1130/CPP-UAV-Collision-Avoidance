@@ -20,6 +20,14 @@ Example: *cmake ~/Documents/uav_project/UAV-collision-avoidance-master*
 4. Command "sudo ./ CA" to run the program (sudo password:   **uavCPP2020**)
 5. to stop the running program, press Ctrl C in the keyboard.
 
+## Possible Error Message
+1."OPEN PORT
+failure, could not open port.
+mavlink_control threw exception 1 "
+-- There is a problem with connecting pixhawk.
+2. "ERROR: Could not read from fd 3"
+-- The battery of pixhawk may be dead.
+
 # Create new Work Branch in mini PC
 1. Copy folder "UAV-collision-avoidance-master" to Work_Branch folder
 2. Change copied "UAV-collision-avoidance-master" folder name with your name on it 
