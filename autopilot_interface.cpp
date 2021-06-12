@@ -129,8 +129,9 @@ string timeStamp()
 	string result(time_str);
 	result.append(".");
 	result.append(std::to_string(ms.count()));
+	
 
-	return result;
+	return result.append(":");
 }
 
 //Appends to txt file or creates txt file if none exist
@@ -139,7 +140,12 @@ static void addToFile(string line, string description)
 	std::ofstream file;
 	//modify string filepath based on folder you want to access
 	//currently will output txt file to project cmake-debug folder
-	string filepath = "logging_file_new333.txt";
+	//string fileName = localtime
+	time_t t = time(0);   // get time now
+    struct tm * now = localtime( & t );
+    char filepath [80];
+    strftime (filepath,80,"logging_file_%Y_%m_%d.txt",now);
+
 	file.open(filepath, std::ios::out | std::ios::app);
 	//make sure write fails with exception if something is wrong
 	file.exceptions(file.exceptions() | std::ios::failbit | std::ifstream::badbit);
@@ -303,9 +309,9 @@ Autopilot_Interface(Serial_Port *serial_port_)
 	write_tid = 0; // write thread id
 	CA_tid = 0;//Collision avoidance thread id
 
-	system_id    = 0; // system id
-	autopilot_id = 0; // autopilot component id
-	companion_id = 0; // companion computer component id
+	system_id    = 1; // system id
+	autopilot_id = 1; // autopilot component id
+	companion_id = 1; // companion computer component id/dev/ttyUSB0
 
 	current_messages.sysid  = system_id;
 	current_messages.compid = autopilot_id;
@@ -463,17 +469,18 @@ read_messages()
 
 				case MAVLINK_MSG_ID_MISSION_COUNT:
 				{
-					//printf("MAVLINK_MSG_ID_MISSION_COUNT\n");
+					
 					mavlink_msg_mission_count_decode(&message, &(current_messages.mavlink_mission_count));
 					current_messages.time_stamps.mavlink_mission_count = get_time_usec();
 					this_timestamps.mavlink_mission_count = current_messages.time_stamps.mavlink_mission_count;
+					printf("MAVLINK_MSG_ID_MISSION_COUNT: %u\n", current_messages.mavlink_mission_count);
 					break;
 				}
 
-				case MAVLINK_MSG_ID_MISSION_ITEM:
+				case MAVLINK_MSG_ID_MISSION_ITEM_INT:
 				{
-					//printf("MAVLINK_MSG_ID_MISSION_ITEM\n");
-					mavlink_msg_mission_item_decode(&message, &(current_messages.mavlink_mission_item));
+					printf("MAVLINK_MSG_ID_MISSION_ITEM\n");
+					mavlink_msg_mission_item_int_decode(&message, &(current_messages.mavlink_mission_item));
 					current_messages.time_stamps.mavlink_mission_item = get_time_usec();
 					this_timestamps.mavlink_mission_item = current_messages.time_stamps.mavlink_mission_item;
 					break;
@@ -487,13 +494,14 @@ read_messages()
 					this_timestamps.mission_current_t = current_messages.time_stamps.mission_current_t;
 
 					currentWaypoint = current_messages.mission_current_t.seq;
+					//printf("MAVLINK_MSG_ID_MISSION_CURRENT: %u\n", currentWaypoint);
 					
 					break;
 				}
 
 				case MAVLINK_MSG_ID_ADSB_VEHICLE:
 				{
-					printf("\nMAVLINK_MSG_ID_ADS_B\n");
+					//printf("\nMAVLINK_MSG_ID_ADS_B\n");
 					//Test that this function will work
 
 				
@@ -509,9 +517,9 @@ read_messages()
 					uint32_t ICAO = mavlink_msg_adsb_vehicle_get_ICAO_address(&message);
 					printf("ICAO %u\n", ICAO);
 
-					if (ICAO == 10700118 ) { //ADSB on test board
-					//if (ICAO == 3819648  ) { //ADSB on Piper Cub
-											
+					// if (ICAO == 10700118 / 11393572) { //ADSB on test board
+					if (ICAO == 3819648  ) { //ADSB on Piper Cub #Swip ICAO if this not working#
+						printf("Quadcopter's ICAO %u\n", ICAO);			
 						// Decode full message and store it
 						mavlink_msg_adsb_vehicle_decode(&message, &(current_messages.adsb_vehicle_t));
 						current_messages.time_stamps.adsb_vehicle_t = get_time_usec();
@@ -525,7 +533,48 @@ read_messages()
 					break;
 				}
 
+				case MAVLINK_MSG_ID_MISSION_ACK:
+				{
+					printf("MAVLINK_MSG_ID_MISSION_ACK\n");
+					mavlink_msg_mission_ack_decode(&message, &(current_messages.mavlink_mission_ack));
+					//if(current_messages.mavlink_mission_ack != 0)
+						printf("ACK MSG: %u\n\n", current_messages.mavlink_mission_ack.type);
+					//else	
+						//printf("Success\n");
+					break;
+				}
 
+				case MAVLINK_MSG_ID_MISSION_REQUEST_INT:
+				{
+					printf("MAVLINK_MSG_ID_MISSION_REQUEST_INT\n");
+					mavlink_msg_mission_request_int_decode(&message, &(current_messages.mission_request_int));
+					current_messages.time_stamps.mission_request_int = get_time_usec();
+					this_timestamps.mission_request_int = current_messages.time_stamps.mission_request_int;
+					break;
+				}
+
+				case MAVLINK_MSG_ID_MISSION_REQUEST:
+				{
+					
+					mavlink_msg_mission_request_decode(&message, &(current_messages.mission_request));
+					current_messages.time_stamps.mission_request = get_time_usec();
+					this_timestamps.mission_request = current_messages.time_stamps.mission_request;
+					/*printf("MAVLINK_MSG_ID_MISSION_REQUEST -- Seq: %d\n",current_messages.mission_request.seq);
+					printf("MAVLINK_MSG_ID_MISSION_REQUEST -- Mission: %d\n",current_messages.mission_request.mission_type);
+					printf("MAVLINK_MSG_ID_MISSION_REQUEST -- TID: %u\n",current_messages.mission_request.target_system);
+					printf("MAVLINK_MSG_ID_MISSION_REQUEST -- CID: %u\n",current_messages.mission_request.target_component);
+					*/break;
+				}
+
+				case MAVLINK_MSG_ID_COMMAND_ACK:
+				{
+					
+					mavlink_msg_command_ack_decode(&message, &(current_messages.mavlink_command_ack));
+					current_messages.time_stamps.mavlink_command_ack = get_time_usec();
+					this_timestamps.mavlink_command_ack = current_messages.time_stamps.mavlink_command_ack;
+					printf("MAVLINK_MSG_ID_COMMAND_ACK -- result: %d\n",current_messages.mavlink_command_ack.result);
+					break;
+				}
 
 				default:
 				{
@@ -906,7 +955,7 @@ read_thread()
 
 	while ( ! time_to_exit )
 	{
-		printf("Read message\n");
+		//printf("Read message\n");
 		read_messages();
 		usleep(100000); // Read batches at 10Hz
 	}
@@ -1058,18 +1107,39 @@ write_set_servo(const int &servo, const int &pwm)
  */
 void
 Autopilot_Interface::
-write_waypoints(std::vector<mavlink_mission_item_t> waypoints, uint16_t seq) {
+write_waypoints(std::vector<mavlink_mission_item_int_t> waypoints, uint16_t desiredSeq) {
 
-    printf("Sending Waypoints\n");
-    writing_status = true;
+
+	/*for (int count = 0; count < waypoints.size(); count++)
+		printf("Waypoint %d\n Lat: %d, Lon %d\n",waypoints[count].seq,waypoints[count].x,waypoints[count].y);
+    //printf("Autopilot_Interface::write_waypoints()\n");
+	printf("Sending Waypoints\n");
+    */writing_status = true;
+
+	/*5-15-2021
+	mavlink_message_t clear_message;
+	mavlink_mission_clear_all_t clear_all_mission;
+	clear_all_mission.target_system = system_id;
+	clear_all_mission.target_component = autopilot_id;
+	clear_all_mission.mission_type = MAV_MISSION_TYPE_ALL;
+	mavlink_msg_mission_clear_all_encode(system_id, companion_id, &clear_message, &clear_all_mission);
+	*/
 
     //Pixhawk needs to know how many waypoints it will receive
     mavlink_mission_count_t mission_count;
-    mission_count.count = (int) waypoints.size();
+    mission_count.count = (uint16_t) waypoints.size();
+	mission_count.target_component = autopilot_id;
+	mission_count.target_system = system_id;
+	mission_count.mission_type = MAV_MISSION_TYPE_MISSION;
+
 	  printf("mission_count.count %i\n",mission_count.count);
     if(send_waypoint_count(mission_count) <= 0){
         fprintf(stderr,"WARNING: could not send waypoint count \n");
     }
+
+
+	
+	
 
     //Send all waypoints
     for(int i = 0; i < waypoints.size(); i++){
@@ -1078,20 +1148,110 @@ write_waypoints(std::vector<mavlink_mission_item_t> waypoints, uint16_t seq) {
         waypoints[i].frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
         waypoints[i].autocontinue = true;
 
-		  //if (i == seq) {waypoints[i].current = 1;}
+		  //if (i == desiredSeq) {waypoints[i].current = 1;}
 		  //else          {waypoints[i].current = 0;}
 
-        mavlink_message_t message;
-        mavlink_msg_mission_item_encode(system_id, companion_id, &message, &waypoints[i]);
+		//WAIT FOR WAYPOINT REQUEST
+		uint64_t time = current_messages.time_stamps.mission_request;
 
-        printf("Waypoint %d Lat: %f, Long: %f, Alt: %f, Seq: %d\n", i, waypoints[i].x, waypoints[i].y, waypoints[i].z, waypoints[i].seq);
+		while( time == current_messages.time_stamps.mission_request ) {
+			//printf("waiting for request...\n");
+			printf("AP Requesting SEQ: %d\n", current_messages.mission_request.seq);
+			//sequence = current_messages.mission_request.seq;
+			usleep(300000);
+		}
+
+		//printf("Give me number %u\n", current_messages.mission_request.seq);
+		//printf("Waypoint seq: %u\n", waypoints[i].seq);
+
+		// SEND WAYPOINT
+		//printf("1Waypoint %d Lat: %d, Long: %d, Alt: %d, Seq: %u\n", i, waypoints[i].x, waypoints[i].y, waypoints[i].z, waypoints[i].seq);
+		mavlink_message_t message;
+        mavlink_msg_mission_item_int_encode(system_id, companion_id, &message, &waypoints[i]);
+        //printf("2Waypoint %d Lat: %f, Long: %f, Alt: %f, Seq: %u\n", i, waypoints[i].x, waypoints[i].y, waypoints[i].z, waypoints[i].seq);
         if ( write_message(message) <= 0 )
             fprintf(stderr,"WARNING: could not send MAV_CMD_DO_SET_SERVO \n");
     }
+	
+	//printf("Write_waypoint:NewWaypoint: %f, %f\n", waypoints[waypoints.size()-1].x, waypoints[waypoints.size()-1].y);
+
+
+	// Send ACK
+
 
     writing_status = false;
 }
 
+
+void
+Autopilot_Interface::
+write_waypoints_old(std::vector<mavlink_mission_item_t> waypoints, uint16_t desiredSeq) {
+
+
+	for (int count = 0; count < waypoints.size(); count++)
+		printf("Waypoint %d\n Lat: %d, Lon %d\n",waypoints[count].seq,waypoints[count].x,waypoints[count].y);
+    //printf("Autopilot_Interface::write_waypoints()\n");
+	printf("Sending Waypoints\n");
+    writing_status = true;
+
+	/*5-15-2021
+	mavlink_message_t clear_message;
+	mavlink_mission_clear_all_t clear_all_mission;
+	clear_all_mission.target_system = system_id;
+	clear_all_mission.target_component = autopilot_id;
+	clear_all_mission.mission_type = MAV_MISSION_TYPE_ALL;
+	mavlink_msg_mission_clear_all_encode(system_id, companion_id, &clear_message, &clear_all_mission);
+	*/
+
+    //Pixhawk needs to know how many waypoints it will receive
+    mavlink_mission_count_t mission_count;
+    mission_count.count = (uint16_t) waypoints.size();
+	  printf("mission_count.count %i\n",mission_count.count);
+    if(send_waypoint_count(mission_count) <= 0){
+        fprintf(stderr,"WARNING: could not send waypoint count \n");
+    }
+
+
+	
+	
+
+    //Send all waypoints
+    for(int i = 0; i < waypoints.size(); i++){
+        waypoints[i].target_system = system_id;
+        waypoints[i].target_component = autopilot_id;
+        waypoints[i].frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
+        waypoints[i].autocontinue = true;
+
+		  //if (i == desiredSeq) {waypoints[i].current = 1;}
+		  //else          {waypoints[i].current = 0;}
+
+		//WAIT FOR WAYPOINT REQUEST
+		uint64_t time = current_messages.time_stamps.mission_request;
+
+		while( time == current_messages.time_stamps.mission_request ) {
+			//printf("waiting for request...\n");
+			printf("AP Requesting SEQ: %d\n", current_messages.mission_request.seq);
+			//sequence = current_messages.mission_request.seq;
+			usleep(300000);
+		}
+
+		printf("Give me number %u\n", current_messages.mission_request.seq);
+		printf("Waypoint seq: %u\n", waypoints[i].seq);
+
+		// SEND WAYPOINT
+		//printf("1Waypoint %d Lat: %d, Long: %d, Alt: %d, Seq: %u\n", i, waypoints[i].x, waypoints[i].y, waypoints[i].z, waypoints[i].seq);
+		mavlink_message_t message;
+        mavlink_msg_mission_item_encode(system_id, companion_id, &message, &waypoints[i]);
+        printf("2Waypoint %d Lat: %f, Long: %f, Alt: %f, Seq: %u\n", i, waypoints[i].x, waypoints[i].y, waypoints[i].z, waypoints[i].seq);
+        if ( write_message(message) <= 0 )
+            fprintf(stderr,"WARNING: could not send MAV_CMD_DO_SET_SERVO \n");
+    }
+	
+	printf("Write_waypoint:NewWaypoint: %f, %f\n", waypoints[waypoints.size()-1].x, waypoints[waypoints.size()-1].y);
+
+
+    writing_status = false;
+}
 
 /*
  * Tells pixhawk how many waypoints it will recieve
@@ -1099,8 +1259,8 @@ write_waypoints(std::vector<mavlink_mission_item_t> waypoints, uint16_t seq) {
 int
 Autopilot_Interface::
 send_waypoint_count(mavlink_mission_count_t mavlink_mission_count) {
-    mavlink_mission_count.target_system = system_id;
-    mavlink_mission_count.target_component = autopilot_id;
+    //mavlink_mission_count.target_system = system_id;
+    //mavlink_mission_count.target_component = autopilot_id;
     mavlink_message_t message;
     mavlink_msg_mission_count_encode(system_id, autopilot_id, &message, &mavlink_mission_count);
     return write_message(message);
@@ -1150,7 +1310,6 @@ start_collision_avoidance_thread (void *args)
 	Autopilot_Interface *autopilot_interface = (Autopilot_Interface *)args;
 
 	// run the object's read thread
-	printf("start_collision_avoidance_thread()  CALL collision_avoidance_begin()\n");
 	autopilot_interface->collision_avoidance_begin();
 
 	// done!
@@ -1160,10 +1319,11 @@ start_collision_avoidance_thread (void *args)
 /*
  * Returns a mavlink acceptable waypoint
  */
-mavlink_mission_item_t
-Autopilot_Interface::create_waypoint(const float &lat, const float &lon, const int &alt, const int &wp_number, const int &radius) {
-    mavlink_mission_item_t mission_item;
+mavlink_mission_item_int_t
+Autopilot_Interface::create_waypoint(const int32_t &lat, const int32_t &lon, const float &alt, const uint16_t &wp_number, const float &radius) {
+    mavlink_mission_item_int_t mission_item;
     mission_item.command = MAV_CMD_NAV_WAYPOINT;
+	mission_item.mission_type = 0;
 	//printf("COMMAND: %i\n", mission_item.command);
     mission_item.param1 = 0;//hold time in decimal second IGNORED by ArduPlane
     mission_item.param2 = radius;//Acceptance radius in meters
@@ -1176,17 +1336,17 @@ Autopilot_Interface::create_waypoint(const float &lat, const float &lon, const i
     return mission_item;
 }
 
-/*
- * Returns a mavlink acceptable loiter waypoint
- */
 mavlink_mission_item_t
-Autopilot_Interface::create_loiter_point(const float &lat, const float &lon, const int &alt, const int &wp_number, const int &radius) {
+Autopilot_Interface::create_waypoint_old(const float &lat, const float &lon, const float &alt, const uint16_t &wp_number, const float &radius) {
     mavlink_mission_item_t mission_item;
-    mission_item.command = MAV_CMD_NAV_LOITER_UNLIM;
+    mission_item.command = MAV_CMD_NAV_WAYPOINT;
+	mission_item.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
+	// This function creates a waypoint in the old mission_item format
+	//printf("COMMAND: %i\n", mission_item.command);
     mission_item.param1 = 0;//hold time in decimal second IGNORED by ArduPlane
-    mission_item.param2 = 0; //empty
-    mission_item.param3 = radius;//0 to pass through WP if >0 radius in meters to pass by WP
-    mission_item.param4 = NAN;//Desired yaw angle NaN for unchanged
+    mission_item.param2 = radius;//Acceptance radius in meters
+    mission_item.param3 = 0;//0 to pass through WP if >0 radius in meters to pass by WP
+    mission_item.param4 = 0;//Desired yaw angle NaN for unchanged
     mission_item.x = lat;//latitude
     mission_item.y = lon;//longitude
     mission_item.z = alt;//altitude
@@ -1198,9 +1358,28 @@ Autopilot_Interface::create_loiter_point(const float &lat, const float &lon, con
 /*
  * Returns a mavlink acceptable loiter waypoint
  */
-mavlink_mission_item_t
+mavlink_mission_item_int_t
+Autopilot_Interface::create_loiter_point(const int32_t &lat, const int32_t &lon, const float &alt, const uint16_t &wp_number, const float &radius) {
+    mavlink_mission_item_int_t mission_item;
+    mission_item.command = MAV_CMD_NAV_LOITER_UNLIM;
+    mission_item.param1 = 0;//hold time in decimal second IGNORED by ArduPlane
+    mission_item.param2 = 0; //empty
+    mission_item.param3 = radius;//0 to pass through WP if >0 radius in meters to pass by WP
+    mission_item.param4 = 0;//Desired yaw angle NaN for unchanged
+    mission_item.x = lat;//latitude
+    mission_item.y = lon;//longitude
+    mission_item.z = alt;//altitude
+    mission_item.seq = wp_number;//waypoint number
+    return mission_item;
+}
+
+
+/*
+ * Returns a mavlink acceptable loiter waypoint
+ */
+mavlink_mission_item_int_t
 Autopilot_Interface::create_takeoff_point(const float &lat, const float &lon, const int &alt, const int &wp_number) {
-    mavlink_mission_item_t mission_item;
+    mavlink_mission_item_int_t mission_item;
     mission_item.command = MAV_CMD_NAV_TAKEOFF;
     mission_item.param1 = 10;//desired pitch angle during takeoff
     mission_item.param2 = 0; //empty
@@ -1217,9 +1396,9 @@ Autopilot_Interface::create_takeoff_point(const float &lat, const float &lon, co
 /*
  * Returns a mavlink acceptable landing waypoint
  */
-mavlink_mission_item_t
+mavlink_mission_item_int_t
 Autopilot_Interface::create_land_point(const float &lat, const float &lon, const int &wp_number) {
-    mavlink_mission_item_t mission_item;
+    mavlink_mission_item_int_t mission_item;
     mission_item.command = MAV_CMD_NAV_LAND;
     mission_item.param1 = 40;//Minimum target altitude if landing is aborted
     mission_item.param2 = 0; //empty
@@ -1324,15 +1503,15 @@ Autopilot_Interface::arm_disarm(int arm) {
 
 /*Return a new position given the x and y displacement in meters of a waypoint
   The waypoint is created off an existing mission item*/
-mavlink_mission_item_t
+mavlink_mission_item_int_t
 Autopilot_Interface::
-createNewDisplacedWaypoint(const double & deltaX, const double & deltaY, const mavlink_mission_item_t & b){
+createNewDisplacedWaypoint(const double & deltaX, const double & deltaY, const mavlink_mission_item_int_t & b){
 
     //coordinate offset in Radians
     float deltaLat = (deltaY / RADIUS_EARTH);
     float deltaLong = deltaX / (RADIUS_EARTH * cos(b.x * PI / 180));
 
-    mavlink_mission_item_t newPosition = b;
+    mavlink_mission_item_int_t newPosition = b;
     newPosition.x = b.x + (deltaLat * (180 / PI));
     newPosition.y = b.y + deltaLong * ((180 / PI));
     //newPosition.seq = b.seq +1;    
@@ -1361,7 +1540,7 @@ createNewDisplacedWaypoint(const double & deltaX, const double & deltaY, const m
 
 //Return a new position given the x and y displacement in meters of an avoid waypoint
 //The waypoint is created off of the current position of the aircraft
-mavlink_mission_item_t
+mavlink_mission_item_int_t
 Autopilot_Interface::NewAvoidWaypoint(const double & deltaX, const double & deltaY, aircraftInfo & pos){
  
     //INPUTS: deltaX and deltaY in meters
@@ -1380,7 +1559,7 @@ Autopilot_Interface::NewAvoidWaypoint(const double & deltaX, const double & delt
 
 	 //printf("deltaLat(1) %f\n", deltaLat);
 
-    mavlink_mission_item_t newPosition;
+    mavlink_mission_item_int_t newPosition;
     
 	 //printf("pos.lat[0] %f\n", pos.lat[0] );
     newPosition.x = pos.lat[0]  + (deltaLat / (3.14159265359/180.0) );
@@ -1398,7 +1577,7 @@ Autopilot_Interface::NewAvoidWaypoint(const double & deltaX, const double & delt
 
 
 //Return x and y distance (NED frame) from current position to second position
-mavlink_mission_item_t
+mavlink_mission_item_int_t
 Autopilot_Interface::
 distanceVectors(const double &target_lat, const double &target_long, const double &current_lat, const double &current_long){
  
@@ -1415,9 +1594,9 @@ distanceVectors(const double &target_lat, const double &target_long, const doubl
 	 double distX = deltaLat * RADIUS_EARTH;
     double distY = deltaLon * RADIUS_EARTH;
 
-    mavlink_mission_item_t newPosition;
+    mavlink_mission_item_int_t newPosition;
 
-	 //This must be changed later. For now we use mavlink_mission_item_t to get the job done. What we are really outputting is x and y distance
+	 //This must be changed later. For now we use mavlink_mission_item_int_t to get the job done. What we are really outputting is x and y distance
     newPosition.x = distX; //Distance N/S (meters)
     newPosition.y = distY; // Distance E/W (meters)
 
@@ -1512,9 +1691,9 @@ predictDistance( const float &ourPos, const predictedCollision &otherPos)
 //This will override the previous next waypoint
 void
 Autopilot_Interface::
-setCurrentWaypoint( uint16_t &waypointNum )
+setCurrentWaypoint( const uint16_t &waypointNum )
 {
-
+	printf("Autopilot_Interface::setCurrentWaypoint()\n");
 	mavlink_mission_set_current_t newWaypoint;
 
 	//Set parameters for the message
@@ -1550,7 +1729,7 @@ Request_Waypoints()
 		return NULL;
 	}
 
-	printf("Auto_Int::Request_Waypoint(): REQUESTING WAYPOINTS\n");
+	printf("REQUESTING WAYPOINTS\n");
 	reading_waypoint_status = true;
 
 	//Request mission
@@ -1563,19 +1742,21 @@ Request_Waypoints()
 
 	//Receive waypoint count
 	int counter = 0;
-	mavlink_mission_item_t missionItem = current_messages.mavlink_mission_item;
+	mavlink_mission_item_int_t missionItem = current_messages.mavlink_mission_item;
 	mavlink_mission_count_t missionCount = current_messages.mavlink_mission_count;
 	missionCount.count = 0;
 	
 	
 	bool waypointError = false;
+	uint64_t count_time = current_messages.time_stamps.mavlink_mission_count;
 	// This is a catch for errors
 	//Give the autopilot some time to receive the message
-	while (missionCount.count < 0.1 && counter < 1000) {
+	//while (missionCount.count < 0.1 && counter < 1000) {
+	while (count_time == current_messages.time_stamps.mavlink_mission_count) {
 		printf("error catch\n");
 		missionCount = current_messages.mavlink_mission_count;
 		counter++;
-		usleep(50000);
+		usleep(500000);
 	}
 
 	// In the case that the waypoint was not received while waiting in the previous function, then return an error
@@ -1585,8 +1766,8 @@ Request_Waypoints()
 	}
 
 
-	printf("MissionCount > 1000 problem here\n");
-	printf("MissionCount: %d\n", missionCount.count);
+	//printf("MissionCount > 1000 problem here\n");
+	printf("MissionCount: %u\n", missionCount.count);
 
 	// if (missionCount.count > 1000) {
 
@@ -1601,14 +1782,23 @@ Request_Waypoints()
 		return waypointError;
 	}
 
-	//For some reason this function needs to end if the waypoint message is to be readork
+	//For some reason this function needs to end if the waypoint message is to be read
 	
 	Receive_Waypoints();
+
+	mavlink_message_t message_ack;
+	mavlink_mission_ack_t ACK;
+	ACK.type =0;
+
+	mavlink_msg_mission_ack_encode(system_id, companion_id, &message_ack, &ACK);
+	if ( write_message(message_ack) <= 0 )
+		fprintf(stderr,"WARNING: could not send ACK \n");
+
 
 	printf("Current mission size: %lu\n", currentMission.size());
 	reading_waypoint_status = false;
 
-	printf("reading_waypoint_status:",reading_waypoint_status );
+	//printf("reading_waypoint_status: %c\n",reading_waypoint_status );
 }
 
 
@@ -1617,14 +1807,14 @@ bool
 Autopilot_Interface::
 Receive_Waypoints() {
 
-	printf("Auto_Int::Receive_Waypoints(): RECEIVING WAYPOINTS\n");
+	printf("RECEIVING WAYPOINTS\n");
 	//---------------------------------------------------------------------
 	//Send request then receive each waypoint of the mission
 	//---------------------------------------------------------------------
 
 	int seqNum = 0; // The current waypoint we are requesting and receiving
  	mavlink_message_t message;
-	mavlink_mission_item_t missionItem = current_messages.mavlink_mission_item;
+	mavlink_mission_item_int_t missionItem = current_messages.mavlink_mission_item;
 	mavlink_mission_count_t missionCount = current_messages.mavlink_mission_count;
 
 	printf("!!!!Number of waypoints: %i!!!!!!\n\n", missionCount.count);
@@ -1636,10 +1826,13 @@ Receive_Waypoints() {
 		//Request waypoint
 		//---------------------------------------------------------------------------------------
 
-		mavlink_msg_mission_request_pack(system_id, companion_id, &message, system_id, companion_id, seqNum, 0);
+		//mavlink_msg_mission_request_pack(system_id, companion_id, &message, system_id, companion_id, seqNum, 0);
+		mavlink_msg_mission_request_int_pack(system_id, companion_id, &message, system_id, companion_id, seqNum, 0);
+
 		if ( write_message(message) <= 0 )
 			fprintf(stderr,"WARNING: could not send MAV_CMD_REQUEST_WAYPOINTS \n");
-			usleep(1700);//Wait for response
+		
+		usleep(30000);//Wait for response
 
 
 		//--------------------------------------------------------------------------------------
@@ -1647,18 +1840,22 @@ Receive_Waypoints() {
 		//--------------------------------------------------------------------------------------
 
 		missionItem = current_messages.mavlink_mission_item;
+		//printf("missionItem.seq: %u\n",missionItem.seq);
 
 		//Account for whether the mission already has elements in it
-		if (currentMission.size() > seqNum) { currentMission[seqNum] = create_waypoint(missionItem.x, missionItem.y, missionItem.z, missionItem.seq, missionItem.param2); }
-		else { currentMission.push_back(create_waypoint(missionItem.x, missionItem.y, missionItem.z, missionItem.seq, missionItem.param2)); }
+		if (currentMission.size() > seqNum) { 
+			currentMission[seqNum] = create_waypoint(missionItem.x, missionItem.y, missionItem.z, missionItem.seq, missionItem.param2); 
+			}
+		else { 
+			currentMission.push_back(create_waypoint(missionItem.x, missionItem.y, missionItem.z, missionItem.seq, missionItem.param2)); 
+			//printf("In else statement\n");
+			}
 
 
 		//Makes sure the waypoint is written to the right vector element and isn't skipped
 
 
 		int i = 0;		
-		printf("seqNum: %i\n", seqNum);
-		printf("current mission seq: %i\n", currentMission[seqNum].seq);
 		
 		while (seqNum != currentMission[seqNum].seq && !time_to_exit) {
 
@@ -1667,8 +1864,7 @@ Receive_Waypoints() {
 			usleep(1000);		
 			i++;
 			/* Accounts for a frozen code. Needs improvement
-			if (i=100000) { //If the autopilot does not receive the waypoint 
-			in this amount of time, an error has occured so start over.
+			if (i=100000) { //If the autopilot does not receive the waypoint in this amount of time, an error has occured so start over.
 
 				printf("hey %i\n", i);
 				reading_waypoint_status = false;
@@ -1678,7 +1874,10 @@ Receive_Waypoints() {
 			}*/
 
 		}
-		
+
+		printf("WP Params:\n Lat: %d\n Lon: %d\n seq: %d\n", currentMission[seqNum].x,currentMission[seqNum].y,currentMission[seqNum].seq);
+		//printf("seqNum: %i\n", seqNum);
+		//printf("current mission seq: %i\n", currentMission[seqNum].seq);
 
 	}
 	
@@ -1708,7 +1907,7 @@ aircraftInfo() {
 	futureDistx [3] = {0};
 	futureDisty [3] = {0};
 	Hdg [2] = {0};
-	safetyBubble = 20;  //Roughly 60 ft
+	safetyBubble = 50;  //Roughly 300 ft
 	priority = 0;
 
 }
@@ -1721,7 +1920,7 @@ start_collision_avoidance()
 	int result;
 	
 
-	printf("\nAuto_Int.start_collision_avoidance(): In start_collision_avoidance \n");
+	printf("\n Autopilot_Interface:: start_collision_avoidance() \n");
 	//Start thread
 	result = pthread_create( &CA_tid, NULL, &start_collision_avoidance_thread, this );
 	if ( result ) throw result;
@@ -1741,7 +1940,6 @@ collision_avoidance_begin()
 	}
 	else
 	{
-		printf("collision_avoidance_begin CALL CA_predict_thread()\n");
 		CA_predict_thread();
 		return;
 	}
@@ -1751,20 +1949,21 @@ collision_avoidance_begin()
 
 void
 Autopilot_Interface::
-insert_waypoint ( mavlink_mission_item_t &newWaypoint, uint16_t &desiredSeqNumber ) {
+insert_waypoint ( mavlink_mission_item_int_t &newWaypoint, const uint16_t &desiredSeqNumber ) {
 
 		//-----------------------------------------------------------------------
 		//Insert waypoint
 		//-----------------------------------------------------------------------
 
+		printf("Autopilot_Interface::insert_waypoint()\n");
+		//printf("Current mission size: %lu\n", currentMission.size());
 
-		printf("Current mission size: %lu\n", currentMission.size());
-
+		//5-13-2021
 			currentMission.push_back(currentMission[0]); //Takes first element and copies it to last for dummy data
 			int endVal = currentMission.size() - desiredSeqNumber;
-			int i;
-
-			for (i = 0; i < endVal; i++) {
+			
+			
+			for (int i = 0; i < endVal; i++) {
 				//printf("\nLatitude before %f\n", currentMission.rbegin()[i].x);
 				currentMission.rbegin()[i] = currentMission.rbegin()[(i+1)]; //Shifts waypoints over until the inserted waypoint is reached
 				currentMission.rbegin()[i].seq = currentMission.size() - (i+1);
@@ -1775,11 +1974,30 @@ insert_waypoint ( mavlink_mission_item_t &newWaypoint, uint16_t &desiredSeqNumbe
 		newWaypoint.seq = desiredSeqNumber;
 
 		currentMission[desiredSeqNumber] = create_waypoint(newWaypoint.x, newWaypoint.y, newWaypoint.z, desiredSeqNumber, 15);
-
-		printf("alt: %f, %f", currentMission[0].z, currentMission[1].z);
+		
+			//int endVal = currentMission.size() - desiredSeqNumber;	
+			//desiredSeqNumber = 3;
+			//for(int i=0; i<3; i++)
+				//currentMission.pop_back(); //Remove the last item
+			//newWaypoint.z = currentMission[endVal].z; //I chose endVal because it is guaranteed to always be there
+			//newWaypoint.seq = desiredSeqNumber;
+			//Put avoidWaypoint at the end as a current waypoint
+			//currentMission.push_back(create_waypoint(newWaypoint.x, newWaypoint.y, newWaypoint.z, desiredSeqNumber, 15));
+			
+		//printf("LastOldWaypoint: %f, %f\n", currentMission[currentMission.size()-1].x, currentMission[currentMission.size()-1].y);
+			//currentMission.push_back(create_waypoint(34.110088647446084, -117.76428455795262, 45.720001, desiredSeqNumber, 15));
+			//currentMission.push_back(create_waypoint(34.110088, -117.764284, 45.720001, currentMission.size(), 15));
+			//currentMission.push_back(currentMission[1]);
+			//currentMission[currentMission.size()-1].seq = currentMission.size()-1;
+		//printf("NewWaypoint: %f, %f\n", currentMission[currentMission.size()-1].x, currentMission[currentMission.size()-1].y);
 	//Write avoid waypoint within mission
 		printf("Seq: %d, %d, %d, %d, %d, %d\n", currentMission[0].seq, currentMission[1].seq, currentMission[2].seq, currentMission[3].seq, currentMission[4].seq, currentMission[5].seq);
-	write_waypoints(currentMission, desiredSeqNumber);
+	
+	
+	/*Display new mission
+	for (int count = 0; count < currentMission.size(); count++)
+		printf("Waypoint %d\n Lat: %d, Lon %d\n",currentMission[count].seq,currentMission[count].x,currentMission[count].y);
+	*/write_waypoints(currentMission, desiredSeqNumber);
 
 }
 
@@ -1814,7 +2032,7 @@ updateAircraftInfo(aircraftInfo & aircraftObj, mavlink_global_position_int_t gpo
 		aircraftObj.gpsTime[0] = gpos.time_boot_ms;
 
 		// Derive velocity and heading from distance vectors
-		mavlink_mission_item_t distVec = distanceVectors(aircraftObj.lat[0], aircraftObj.lon[0], aircraftObj.lat[1], aircraftObj.lon[1]);
+		mavlink_mission_item_int_t distVec = distanceVectors(aircraftObj.lat[0], aircraftObj.lon[0], aircraftObj.lat[1], aircraftObj.lon[1]);
 		
 		aircraftObj.velocityX[0] = distVec.x / ((aircraftObj.gpsTime[0] - aircraftObj.gpsTime[1]) / 1000.0);
 		aircraftObj.velocityY[0] = distVec.y / ((aircraftObj.gpsTime[0] - aircraftObj.gpsTime[1]) / 1000.0);
@@ -1868,8 +2086,8 @@ void
 Autopilot_Interface::
 CA_predict_thread()
 {
-	printf("Start CA_predict_thread()\n");
 
+	//printf("Autopilot_Interface::CA_predict_thread()\n");
 	//------------------------------------------------
 	//Start detect/predict loop
 	//------------------------------------------------
@@ -1900,15 +2118,15 @@ CA_predict_thread()
 		adsb = current_messages.adsb_vehicle_t;
 
 		//If the current stored position is not equal to the gpos position i.e. the position message has been updated, then these vectors can be 			updated. Otherwise wait a little longer to update the array
-
-		// printf("\nAuto_Int. CA_predict_thread():\n!!!!!Here Our Plane!!!!!!!!\n");
-		// printf("Ouraircraft Update: %s\n", ourUpdated?"true":"false");
-		// printf("our lat %f\n", ourAircraft.lat[0]);
-		// printf("our lon %f\n", ourAircraft.lon[0]);
-		// printf("gpos lat %f\n", gpos.lat/1E7);
-		// printf("gpos lon %f\n", gpos.lon/1E7);
-
-		// Update check for the controlled aircraft
+		/*
+		printf("\n!!!!!Here Our Plane!!!!!!!!\n");
+		printf("Ouraircraft Update: %s\n", ourUpdated?"true":"false");
+		printf("our lat %f\n", ourAircraft.lat[0]);
+		printf("our lon %f\n", ourAircraft.lon[0]);
+		printf("gpos lat %f\n", gpos.lat/1E7);
+		printf("gpos lon %f\n", gpos.lon/1E7);
+		*/
+		//Update check for the controlled aircraft
 		//If our position has changed then updateAircraftInfo(A)
 		if ( fabs(ourAircraft.lat[0] - (double) gpos.lat/1E7) > 0.0000001 || fabs(ourAircraft.lon[0] - (double) gpos.lon/1E7) > 0.0000001 ) 
 		{
@@ -1945,13 +2163,14 @@ CA_predict_thread()
 			fractionSinceUpdate++; //Time = .3333*fractionSinceUpdate 
 		}
 		
-		// printf("\n???There Other Plane?????\n");
-		// printf("Otheraircraft Update: %s\n", otherUpdated?"true":"false");
-		// printf("other lat  %f\n",otherAircraft.lat[0]);
-		// printf("other lon  %f\n",otherAircraft.lon[0]);
-		// printf("adsb lat  %f\n",adsb.lat/1E7);
-		// printf("adsb lon  %f\n",adsb.lon/1E7);
-		
+		/*
+		printf("\n???There Other Plane?????\n");
+		printf("Otheraircraft Update: %s\n", otherUpdated?"true":"false");
+		printf("other lat  %f\n",otherAircraft.lat[0]);
+		printf("other lon  %f\n",otherAircraft.lon[0]);
+		printf("adsb lat  %f\n",adsb.lat/1E7);
+		printf("adsb lon  %f\n",adsb.lon/1E7);
+		*/
 		
 		//printf("log criteria dist: %lf\n",(double) abs(otherAircraft.lat[0] - (double) adsb.lat/1E7));
 		/*if ( fractionSinceUpdate > 9 ) 
@@ -1975,10 +2194,10 @@ CA_predict_thread()
 			//log all the new position data
 			addToFile("New point ~~~~~~~~~~","");
 			addToFile(convertToString(ourAircraft.lat[2]),"last lattitude");
-			addToFile(convertToString(ourAircraft.lon[2]),"last ongitude");
-			addToFile(convertToString(ourAircraft.lat[1]),"second to last lattitude");
+			addToFile(convertToString(ourAircraft.lon[2]),"last longitude");
+			addToFile(convertToString(ourAircraft.lat[1]),"second to last Lattitude");
 			addToFile(convertToString(ourAircraft.lon[1]),"second to last Longitude");
-			addToFile(convertToString(ourAircraft.lat[0]),"Our lattitude");
+			addToFile(convertToString(ourAircraft.lat[0]),"Our Lattitude");
 			addToFile(convertToString(ourAircraft.lon[0]),"Our Longitude");
 			addToFile(convertToString(otherAircraft.lat[1]),"Other second Lattitude");
 			addToFile(convertToString(otherAircraft.lon[1]),"Other second Longitude");
@@ -1988,11 +2207,9 @@ CA_predict_thread()
 			addToFile(convertToString(ourAircraft.velocityY[0]),"Our Y Velocity");//NED
 			addToFile(convertToString(otherAircraft.velocityX[0]),"Other X Velocity");//NED
 			addToFile(convertToString(otherAircraft.velocityY[0]),"Other Y Velocity");//NED
-			
-			printf("Autopilot_Interface::CA_predict_thread():\n");
-			printf("Done Logging\n");
+			//printf("Done Logging\n");
 
-			//printf("\nPREDICT\n");			//Predict using the logged point
+			printf("\nPREDICT\n");			//Predict using the logged point
 			collision = CA_Predict(ourAircraft, otherAircraft, ourAircraft.Hdg[0], ourAircraft.Hdg[1]);
 			//collision.collisionDetected == true;
 			
@@ -2001,12 +2218,12 @@ CA_predict_thread()
 			//Avoid if necessary
 			if (collision.collisionDetected == true && AVOID_DELAY <=1 ) {
 				printf("Avoid function\n");
-				AVOID_DELAY = 28; //This is not a great way to keep multiple points from being written to the pixhawk 
+				AVOID_DELAY = 90; //This is not a great way to keep multiple points from being written to the pixhawk 
 				CA_Avoid(ourAircraft, otherAircraft, collision);
 			}
 
-
-			printf("Distance between aircraft: %f\n", gpsDistance(ourAircraft.lat[0], ourAircraft.lon[0], otherAircraft.lat[0], otherAircraft.lon[0]));
+			if(collision.collisionDetected)
+				printf("Distance between aircraft: %f\n", gpsDistance(ourAircraft.lat[0], ourAircraft.lon[0], otherAircraft.lat[0], otherAircraft.lon[0]));
 
 			if (AVOID_DELAY > 0) {
 				AVOID_DELAY--;
@@ -2017,7 +2234,8 @@ CA_predict_thread()
 			//Now that we have predicted we can revert the update boolians
 			ourUpdated = false;
 			otherUpdated = false;
-			printf("end predict with other updated = %d\n",otherUpdated);
+			if(collision.collisionDetected)
+				printf("end predict with other updated = %d\n",otherUpdated);
 			
 		}//End predict
 
@@ -2067,6 +2285,7 @@ predictedCollision
 Autopilot_Interface::
 CA_Predict(aircraftInfo & aircraftA, aircraftInfo & aircraftB, double current_HdgA, double last_HdgA)
 {
+	printf("Autopilot_Interface::CA_Predict()\n");
 	float fps = 15.0; //fps meaning future points
 	double rH; // for relative Heading of the planes
 	float t;
@@ -2254,8 +2473,8 @@ CA_Predict(aircraftInfo & aircraftA, aircraftInfo & aircraftB, double current_Hd
 		futureHdgB = 90 + (270 - (aircraftB.Hdg[0] + thetaB_i * 180 / 3.1415));
 
 		//Creates a future position item based on the current position and future distance
-		mavlink_mission_item_t ourFuturePos = NewAvoidWaypoint(RpredictA[0], RpredictA[1], aircraftA);
-		mavlink_mission_item_t otherFuturePos = NewAvoidWaypoint(RpredictB[0], RpredictB[1], aircraftB);
+		mavlink_mission_item_int_t ourFuturePos = NewAvoidWaypoint(RpredictA[0], RpredictA[1], aircraftA);
+		mavlink_mission_item_int_t otherFuturePos = NewAvoidWaypoint(RpredictB[0], RpredictB[1], aircraftB);
 		//printf("Predicted position: (%f, %f)\n", ourFuturePos.x, ourFuturePos.y);
 
 		//printf("ourFuturePos.x %f\n", ourFuturePos.x);
@@ -2309,7 +2528,7 @@ CA_Predict(aircraftInfo & aircraftA, aircraftInfo & aircraftB, double current_Hd
 		}
 	}
 	
-	//printf("Prediction function ended\n\n");
+	//printf("Autopilot_Interface::CA_Predict():Prediction function ended\n\n");
 	return collisionPoint;
 }
 
@@ -2384,14 +2603,13 @@ void
 Autopilot_Interface::
 CA_Avoid(aircraftInfo & aircraftA, aircraftInfo & aircraftB, predictedCollision & collision)
 {
-
-	
+	printf("Autopilot_Interface::CA_Avoid()\n");
 	double missDist = 75; //Meters
 	double turnRadius = 50; //Meters
 	double avoidVec[2] = {0};
 	//Stores waypoints in Current_Waypoints
-    	Request_Waypoints();
-	mavlink_mission_item_t headingVector; //FOR TESTING PURPOSES. MUST BE CHANGED LATER ALONG WITH "distanceVectors" FUNCTION
+    	//Request_Waypoints();  //5-10-2021
+	mavlink_mission_item_int_t headingVector; //FOR TESTING PURPOSES. MUST BE CHANGED LATER ALONG WITH "distanceVectors" FUNCTION
 	
 	//get info for aircraft
     	double latA = aircraftA.lat[0];
@@ -2429,7 +2647,7 @@ CA_Avoid(aircraftInfo & aircraftA, aircraftInfo & aircraftB, predictedCollision 
 	avdAng = 0;
 	while(newCollision.collisionDetected && count > 0)
 	{
-		
+		printf("In CA_Avoid()\n");
 		if(right)
 		{
 			avdAng += 2 * asin(aircraftA.safetyBubble / collision.distance);
@@ -2486,7 +2704,7 @@ CA_Avoid(aircraftInfo & aircraftA, aircraftInfo & aircraftB, predictedCollision 
 	//Avoid if other aircraft is approaching from the side
     	if (fabs(relativeHdg) > 30.0 && fabs(relativeHdg) < 150.0)
 	{
-		mavlink_mission_item_t distVec = distanceVectors(aircraftB.lat[0], aircraftB.lon[0], aircraftA.lat[0], aircraftA.lon[0]);
+		mavlink_mission_item_int_t distVec = distanceVectors(aircraftB.lat[0], aircraftB.lon[0], aircraftA.lat[0], aircraftA.lon[0]);
     		distMag = sqrt( pow((distVec.x),2) + pow(distVec.y, 2));
     		distHdg = atan2(distVec.y, distVec.x);
 
@@ -2538,16 +2756,23 @@ CA_Avoid(aircraftInfo & aircraftA, aircraftInfo & aircraftB, predictedCollision 
 
 	printf("avoidVex x,y: %f, %f\n", avoidVec[0], avoidVec[1]);
     	//generate the waypoint
-    	mavlink_mission_item_t avoidWaypoint;
+    	mavlink_mission_item_int_t avoidWaypoint;
 	futureLatA = asin(sin(aircraftA.lat[0]) * cos(collision.distance / RADIUS_EARTH) +
 				 cos(aircraftA.lat[0]) * sin(collision.distance / RADIUS_EARTH) * cos(avdHdg * TO_RADIANS));
 	futureLonA = aircraftA.lon[0] + atan2(sin(avdHdg * TO_RADIANS) * sin(collision.distance / RADIUS_EARTH) * cos(aircraftA.lat[0]), 
 						     cos(collision.distance / RADIUS_EARTH) * sin(aircraftA.lat[0]) * sin(futureLatA));
 	
-	avoidWaypoint.x = futureLatA;
-	avoidWaypoint.y = futureLonA;
-	avoidWaypoint.z = futureAltA;
-	
+	//Commented 5-13-2021
+	//avoidWaypoint.x = futureLatA;
+	//avoidWaypoint.y = futureLonA;
+	//avoidWaypoint.z = futureAltA;
+
+	//5-13-2021
+	//Set a fix point as avoidWaypoint: Spadra Farm CPP
+	avoidWaypoint.x = 340433920;
+	avoidWaypoint.y = -1178129089;
+	avoidWaypoint.z = 50;
+
 	//printf("avoidVex x,y: %f, %f\n", avoidVec[0], avoidVec[1]);
 	printf("avoidWaypoint.x after: %f\n", avoidWaypoint.x);
 	printf("avoidWaypoint.x %f , y: %f\n", avoidWaypoint.x, avoidWaypoint.y);
@@ -2560,12 +2785,20 @@ CA_Avoid(aircraftInfo & aircraftA, aircraftInfo & aircraftB, predictedCollision 
 	//See if distance is correct
 	addToFile(convertToString(gpsDistance(avoidWaypoint.x, avoidWaypoint.y, aircraftA.lat[0], aircraftA.lon[0])), "Distance to avoid point");
 
+		/*
     	//insert the waypoint
     	insert_waypoint( avoidWaypoint, currentWaypoint);
+		*/
+
+		std::vector<mavlink_mission_item_int_t> simpleMission;
+		simpleMission.push_back(create_waypoint(avoidWaypoint.x, avoidWaypoint.y, 50, 0, 20));
+		simpleMission.push_back(create_loiter_point(avoidWaypoint.x, avoidWaypoint.y, 50, 1, 20));
+
+		write_waypoints(simpleMission,simpleMission[1].seq);
 
 
     	//Tell the aircraft to go to the waypoint
-    	setCurrentWaypoint(currentWaypoint); //May not need this now that the write waypoints function is fixed
+    	setCurrentWaypoint(simpleMission[1].seq); //May not need this now that the write waypoints function is fixed
 
 
 	addToFile(convertToString(currentWaypoint), "Replaced waypoint and current waypoint");

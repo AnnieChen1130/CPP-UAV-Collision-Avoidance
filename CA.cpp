@@ -140,7 +140,7 @@ top (int argc, char **argv)
 
 	autopilot_interface.start();
 //sleep(5);	
-printf("CA::top(): START COLLISION AVOIDANCE");
+printf("CA::top(): CALL autopilot_interface.START COLLISION AVOIDANCE");
 	//---------------------------------------------------------------------------
 	//START COLLISION AVOIDANCE THREAD
 	//---------------------------------------------------------------------------
@@ -154,8 +154,9 @@ printf("CA::top(): START COLLISION AVOIDANCE");
 	/*
 	 * Now we can implement the algorithm we want on top of the autopilot interface
 	 */
+	printf("CA::top(): CALL commands(autopilot_interface)");
 	commands(autopilot_interface);
-
+	
 
 	// --------------------------------------------------------------------------
 	//   THREAD and PORT SHUTDOWN
@@ -188,14 +189,50 @@ commands(Autopilot_Interface &api)
 
 
 
-		printf("\nCA::commands(): Requested waypoints\n");
+		printf("\nCA::commands(): CALL api.Requested waypoints\n");
 		api.Request_Waypoints();
-		//mavlink_mission_item_t avoidWaypoint = api.create_waypoint(34.213354, -117.321498, 50, 5, 20);
-		
-		uint16_t seq = 3;
-		
-		//api.insert_waypoint ( avoidWaypoint, seq );
 
+		
+		/*mavlink_message_t clear_message;
+		mavlink_mission_clear_all_t clear_all_mission;
+		clear_all_mission.target_system = api.system_id;
+		clear_all_mission.target_component = api.autopilot_id;
+		clear_all_mission.mission_type = MAV_MISSION_TYPE_ALL;
+		mavlink_msg_mission_clear_all_encode(api.system_id, api.companion_id, &clear_message, &clear_all_mission);
+        
+		if ( api.write_message(clear_message) <= 0 )
+            fprintf(stderr,"WARNING: could not send MAV_CMD_DO_SET_SERVO \n");	
+        */
+
+		//mavlink_message_t message;		
+		//mavlink_msg_mission_item_encode(api.system_id, api.companion_id, &message, &api.currentMission[0]);
+
+		//std::vector<mavlink_mission_item_int_t> testMission;
+		//testMission.push_back(api.create_waypoint(00, 00, 50, 0, 2000));
+		//testMission.push_back(api.create_waypoint(342133330, -1173214980, 50, 1, 20));
+
+		//Test insert_waypoint;
+		//testMission.push_back(api.create_waypoint(0.0, 0.0, 50, 0, 2000));
+		//testMission.push_back(api.create_waypoint(34.213333, -117.3214980, 50, 1, 20));
+		//api.write_waypoints(testMission,1);
+
+		
+		/*mavlink_mission_item_int_t avoidWaypoint = api.create_waypoint(34.213333, -117.3214980, 50, 3, 20);
+		api.insert_waypoint ( avoidWaypoint, 3);
+            
+		uint16_t cwp = 3;
+		api.setCurrentWaypoint( cwp );*/
+	//Set a fix point as avoidWaypoint: Spadra Farm CPP
+	/*mavlink_mission_item_int_t avoidWaypoint;
+	avoidWaypoint.x = 340433920;
+	avoidWaypoint.y = -1178129089;
+	avoidWaypoint.z = 50;
+
+		std::vector<mavlink_mission_item_int_t> simpleMission;
+		simpleMission.push_back(api.create_waypoint(avoidWaypoint.x, avoidWaypoint.y, 50, 0, 20));
+		simpleMission.push_back(api.create_loiter_point(avoidWaypoint.x, avoidWaypoint.y, 50, 1, 20));
+
+		api.write_waypoints(simpleMission,simpleMission[1].seq);*/
 	
 			int i;
 			float velocity;
@@ -204,7 +241,7 @@ commands(Autopilot_Interface &api)
 			velocity = api.current_messages.global_position_int.vx;
 			printf("\n\nvelocity x %f \n\n", (velocity/100));
 
-		sleep(2);
+		sleep(5);
 		}	
 		
 

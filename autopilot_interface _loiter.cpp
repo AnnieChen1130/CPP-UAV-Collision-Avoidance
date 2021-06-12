@@ -1505,7 +1505,7 @@ CA_predict_thread()
 		}
 */
 
-	printf("\nPOSITION LOGGED\n");
+	printf("\n!!!!POSITION LOGGED!!!!!\n");
 	//------------------------------------------------
 	//Start predict loop
 	//------------------------------------------------

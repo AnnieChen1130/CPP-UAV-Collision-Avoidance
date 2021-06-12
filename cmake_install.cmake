@@ -1,4 +1,4 @@
-# Install script for directory: /home/uav_cpp/Documents/uav_project/UAV-collision-avoidance-master
+# Install script for directory: /home/uav_cpp/Desktop/Work_Branch/Annie-UAV-collision-avoidance-Annie
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -50,5 +50,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/uav_cpp/Documents/uav_project/UAV-collision-avoidance-master/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/uav_cpp/Desktop/Work_Branch/Annie-UAV-collision-avoidance-Annie/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
